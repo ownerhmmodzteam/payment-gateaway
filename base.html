@@ -10,7 +10,7 @@
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: #020617; color: white; min-height: 100vh; }
         .glass-panel { background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
         .card-wallet { background: linear-gradient(135deg, #1e40af, #3b82f6); box-shadow: 0 20px 40px -15px rgba(30, 64, 175, 0.5); }
-        .ios-input { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: white; }
+        .ios-input { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: white; outline: none; }
     </style>
 </head>
 <body class="pb-20">
@@ -31,7 +31,7 @@
             
             <div class="flex gap-4 mt-10">
                 <button onclick="openModal()" class="flex-1 bg-white/20 backdrop-blur-md text-white font-bold py-4 rounded-2xl border border-white/20 active:scale-95 transition">Top Up QRIS</button>
-                <button class="flex-1 bg-white text-blue-900 font-bold py-4 rounded-2xl active:scale-95 transition">Kirim</button>
+                <button onclick="alert('Fitur segera hadir!')" class="flex-1 bg-white text-blue-900 font-bold py-4 rounded-2xl active:scale-95 transition">Kirim</button>
             </div>
         </div>
 
@@ -48,27 +48,26 @@
     </main>
 
     <div id="modal-topup" class="hidden fixed inset-0 flex items-center justify-center bg-black/90 backdrop-blur-xl z-50 p-6">
-        <div class="w-full max-w-sm glass-panel rounded-[3rem] p-10 text-center border border-white/10 animate-in">
-            <div class="w-16 h-1 bg-slate-700 rounded-full mx-auto mb-8"></div>
-            <h3 class="text-2xl font-extrabold mb-2">Generate QRIS</h3>
-            <p class="text-slate-400 text-sm mb-8">Masukkan nominal deposit anda</p>
+        <div class="w-full max-w-sm glass-panel rounded-[3rem] p-10 text-center border border-white/10">
+            <h3 class="text-2xl font-extrabold mb-2 text-blue-400">Deposit QRIS</h3>
+            <p class="text-slate-400 text-xs mb-8">Minimal Rp 1.000</p>
             
             <div class="space-y-6">
                 <div class="relative">
                     <span class="absolute left-4 top-4 font-bold text-slate-500">Rp</span>
-                    <input type="number" id="amount" placeholder="0" class="w-full ios-input p-4 pl-12 rounded-2xl text-xl font-bold outline-none">
+                    <input type="number" id="amount" placeholder="0" class="w-full ios-input p-4 pl-12 rounded-2xl text-xl font-bold">
                 </div>
                 
-                <button id="btn-pay" onclick="requestQRIS()" class="w-full bg-blue-600 text-white font-bold p-5 rounded-2xl shadow-lg shadow-blue-600/30">Lanjutkan Pembayaran</button>
+                <button id="btn-pay" onclick="requestQRIS()" class="w-full bg-blue-600 text-white font-bold p-5 rounded-2xl shadow-lg shadow-blue-600/30">Dapatkan QRIS</button>
                 
                 <div id="qris-display" class="hidden flex flex-col items-center pt-6 space-y-4">
                     <div class="bg-white p-4 rounded-3xl shadow-2xl">
                         <img id="qris-img" src="" class="w-52 h-52">
                     </div>
-                    <p class="text-[10px] text-blue-400 font-bold tracking-widest uppercase">Scan Menggunakan Aplikasi Bank/E-Wallet</p>
+                    <p class="text-[10px] text-blue-400 font-bold tracking-widest uppercase">Scan Menggunakan Bank / E-Wallet</p>
                 </div>
 
-                <button onclick="closeModal()" class="text-slate-500 text-sm font-semibold mt-4">Nanti Saja</button>
+                <button onclick="closeModal()" class="text-slate-500 text-xs font-bold uppercase mt-4">Tutup</button>
             </div>
         </div>
     </div>
@@ -91,11 +90,11 @@
             const btn = document.getElementById('btn-pay');
             if(amt < 1000) return alert("Min. Rp 1.000");
 
-            btn.innerText = "Memproses...";
+            btn.innerText = "Processing...";
             btn.disabled = true;
 
             try {
-                // Menembak ke API Route Vercel (Lebih Aman & Tanpa Proxy Manual)
+                // Memanggil serverless function di Vercel
                 const response = await fetch('/api/generate-qris', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -105,16 +104,17 @@
                 const data = await response.json();
 
                 if(data.success || data.status === 'success') {
+                    // Mendukung berbagai format respon dari API Mustika
                     document.getElementById('qris-img').src = data.qr_url || data.qr_image_url || data.data.qr_url;
                     document.getElementById('qris-display').classList.remove('hidden');
                     btn.classList.add('hidden');
                 } else {
-                    alert("Gagal mengambil QRIS. Cek Saldo API.");
+                    alert("Gagal mengambil QRIS. Pastikan saldo API mencukupi.");
                 }
             } catch (err) {
-                alert("Gangguan koneksi ke server.");
+                alert("Gangguan koneksi server.");
             } finally {
-                btn.innerText = "Lanjutkan Pembayaran";
+                btn.innerText = "Dapatkan QRIS";
                 btn.disabled = false;
             }
         }
