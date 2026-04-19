@@ -4,7 +4,7 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
 
     const { amount } = req.body;
-    const apiKey = 'MP-hmmodz_store-1776566983';
+    const apiKey = 'MP-wdZbcLj8Czezunp-7CjIQ5eTz85YH0as';
     const targetUrl = `https://api.mustika.com/v1/generate?api_key=${apiKey}&amount=${amount}`;
 
     try {
