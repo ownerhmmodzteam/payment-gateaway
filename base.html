@@ -3,42 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HM Dashboard</title>
+    <title>HM STREAM - Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0f172a; color: white; min-height: 100vh; }
         .glass { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .ios-input { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: white; }
+        .ios-input { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: white; outline: none; }
     </style>
 </head>
 <body class="p-6">
+
     <header class="flex justify-between items-center mb-8">
-        <h1 id="user-name" class="text-2xl font-bold italic text-blue-400 text-shadow-lg">HM STREAM</h1>
+        <div>
+            <p class="text-blue-300/60 text-xs uppercase">Welcome</p>
+            <h1 id="user-name" class="text-2xl font-bold italic text-blue-400">User</h1>
+        </div>
         <div onclick="localStorage.clear(); location.href='index.html'" class="w-10 h-10 bg-red-500/20 rounded-full flex items-center justify-center cursor-pointer">🚪</div>
     </header>
 
-    <div class="glass p-8 rounded-[2.5rem] mb-6">
-        <p class="text-xs text-blue-200 uppercase tracking-widest">Saldo Anda</p>
+    <div class="glass p-8 rounded-[2.5rem] mb-6 shadow-xl">
+        <p class="text-xs text-blue-200 uppercase tracking-widest">Saldo Saat Ini</p>
         <h2 id="user-saldo" class="text-4xl font-bold mt-1">Rp 0</h2>
         <div class="grid grid-cols-2 gap-4 mt-8">
-            <button onclick="openModal('transfer')" class="bg-white text-blue-900 font-bold py-4 rounded-2xl active:scale-95 transition shadow-lg">Kirim</button>
-            <button onclick="openModal('qris')" class="bg-blue-600 text-white font-bold py-4 rounded-2xl active:scale-95 transition shadow-lg">Minta</button>
+            <button onclick="alert('Fitur Transfer Segera Hadir!')" class="bg-white text-blue-900 font-bold py-4 rounded-2xl active:scale-95 transition">Kirim</button>
+            <button onclick="openModal()" class="bg-blue-600 text-white font-bold py-4 rounded-2xl active:scale-95 transition">Top Up</button>
         </div>
     </div>
 
-    <div id="modal-qris" class="hidden fixed inset-0 flex items-center justify-center bg-black/80 backdrop-blur-md z-50 p-6">
+    <div id="modal-topup" class="hidden fixed inset-0 flex items-center justify-center bg-black/80 backdrop-blur-md z-50 p-6">
         <div class="w-full max-w-sm glass rounded-[2.5rem] p-8 text-center">
-            <h3 class="text-xl font-bold mb-6">Minta Pembayaran</h3>
-            <input type="number" id="qris-amount" placeholder="Masukkan Nominal" class="w-full ios-input p-4 rounded-2xl text-center mb-4 text-xl font-bold outline-none">
-            <button id="btn-qris" onclick="requestQRIS()" class="w-full bg-blue-500 p-4 rounded-2xl font-bold shadow-blue-500/50 shadow-lg">Generate QRIS</button>
+            <h3 class="text-xl font-bold mb-6">Metode QRIS</h3>
+            <input type="number" id="amount" placeholder="Nominal" class="w-full ios-input p-4 rounded-2xl text-center mb-4 text-xl font-bold">
+            <button id="btn-pay" onclick="requestQRIS()" class="w-full bg-blue-500 p-4 rounded-2xl font-bold shadow-lg shadow-blue-500/30">Dapatkan QRIS</button>
+            
             <div id="qris-display" class="hidden pt-6">
                 <div class="bg-white p-3 rounded-2xl inline-block shadow-2xl">
                     <img id="qris-img" src="" class="w-48 h-48">
                 </div>
-                <p class="text-[10px] text-gray-400 mt-4">API Key: MP-hmmodz_store-1776566983</p>
+                <p class="text-[10px] text-gray-400 mt-4 italic">Silakan scan untuk membayar</p>
             </div>
-            <button onclick="closeModal('qris')" class="w-full text-gray-400 text-sm mt-6">Tutup</button>
+
+            <button onclick="closeModal()" class="w-full text-gray-500 text-sm mt-6">Tutup</button>
         </div>
     </div>
 
@@ -48,38 +54,40 @@
         document.getElementById('user-name').innerText = user.nama;
         document.getElementById('user-saldo').innerText = "Rp " + (user.saldo || 0).toLocaleString();
 
-        function openModal(t) { document.getElementById(`modal-${t}`).classList.remove('hidden'); }
-        function closeModal(t) { 
-            document.getElementById(`modal-${t}`).classList.add('hidden'); 
+        function openModal() { document.getElementById('modal-topup').classList.remove('hidden'); }
+        function closeModal() { 
+            document.getElementById('modal-topup').classList.add('hidden');
             document.getElementById('qris-display').classList.add('hidden');
-            document.getElementById('btn-qris').classList.remove('hidden');
+            document.getElementById('btn-pay').classList.remove('hidden');
         }
 
         async function requestQRIS() {
-            const amt = document.getElementById('qris-amount').value;
-            const btn = document.getElementById('btn-qris');
+            const amt = document.getElementById('amount').value;
+            const btn = document.getElementById('btn-pay');
             const apiKey = 'MP-hmmodz_store-1776566983';
-
+            
             if(amt < 1000) return alert("Minimal Rp 1.000");
             btn.innerText = "Processing...";
-            
+
+            // Menggunakan Proxy untuk melewati blokir CORS di browser
+            const proxy = "https://cors-anywhere.herokuapp.com/";
+            const target = `https://api.mustika.com/v1/generate?api_key=${apiKey}&amount=${amt}`;
+
             try {
-                // Menembak langsung ke API Mustika (Bypass Server.js)
-                const url = `https://api.mustika.com/v1/generate?api_key=${apiKey}&amount=${amt}`;
-                const response = await fetch(url);
+                const response = await fetch(proxy + target);
                 const data = await response.json();
 
                 if(data.success || data.status === 'success') {
-                    document.getElementById('qris-img').src = data.qr_image_url || data.data.qr_url;
+                    document.getElementById('qris-img').src = data.qr_url || data.qr_image_url || data.data.qr_url;
                     document.getElementById('qris-display').classList.remove('hidden');
                     btn.classList.add('hidden');
                 } else {
-                    alert("Gagal: " + (data.message || "Periksa Saldo API"));
+                    alert("Gagal: " + (data.message || "Saldo API Mustika habis"));
                 }
             } catch (e) {
-                alert("Kesalahan Jaringan. Pastikan API Mustika mengizinkan akses dari browser.");
+                alert("Klik tombol 'Request access' di https://cors-anywhere.herokuapp.com/corsdemo dulu!");
             } finally {
-                btn.innerText = "Generate QRIS";
+                btn.innerText = "Dapatkan QRIS";
             }
         }
     </script>
