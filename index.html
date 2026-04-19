@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Gateway</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: radial-gradient(circle at top right, #1e3a8a, #0f172a); color: white; overflow: hidden; }
+        .glass { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .ios-input { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: white; transition: all 0.3s ease; }
+        .btn-primary { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+        .hidden { display: none; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade { animation: fadeIn 0.4s ease-out forwards; }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-6">
+
+    <div id="login-card" class="w-full max-w-sm glass p-8 rounded-[2.5rem] shadow-2xl animate-fade">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold tracking-tight">HM STREAM</h1>
+            <p class="text-blue-300/60 text-sm mt-1">Sign in with Name or ID</p>
+        </div>
+        <div class="space-y-4">
+            <input type="text" id="login-user" placeholder="Username / Full Name" class="w-full ios-input p-4 rounded-2xl text-center">
+            <input type="password" id="login-pass" placeholder="Password" class="w-full ios-input p-4 rounded-2xl text-center">
+            <button onclick="prosesLogin()" id="btn-login" class="w-full btn-primary text-white font-semibold p-4 rounded-2xl active:scale-95 transition">Login</button>
+            <button onclick="tampilDaftar()" class="w-full text-blue-400 text-sm font-medium mt-2">Create Account</button>
+        </div>
+    </div>
+
+    <div id="register-card" class="hidden w-full max-w-sm glass p-8 rounded-[2.5rem] shadow-2xl animate-fade">
+        <div class="text-center mb-6">
+            <h1 class="text-2xl font-bold">Registration</h1>
+        </div>
+        <div class="space-y-4">
+            <input type="text" id="reg-nama" placeholder="Full Name" class="w-full ios-input p-4 rounded-2xl">
+            <input type="text" id="reg-alamat" placeholder="Address" class="w-full ios-input p-4 rounded-2xl">
+            <input type="tel" id="reg-wa" placeholder="WhatsApp Number" class="w-full ios-input p-4 rounded-2xl">
+            <button onclick="prosesDaftar()" id="btn-reg" class="w-full btn-primary text-white font-semibold p-4 rounded-2xl active:scale-95 transition">Register Now</button>
+            <button onclick="tampilLogin()" class="w-full text-gray-400 text-sm mt-1">Cancel</button>
+        </div>
+    </div>
+
+    <div id="ios-dialog" class="hidden fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50">
+        <div class="w-[280px] glass rounded-[1.2rem] overflow-hidden animate-fade">
+            <div class="p-6 text-center">
+                <h3 class="font-bold text-lg">Access Granted</h3>
+                <div class="mt-4 p-3 bg-white/5 rounded-xl text-[12px] font-mono space-y-1">
+                    <p id="alert-user" class="text-blue-400 font-bold"></p>
+                    <p id="alert-pass" class="text-green-400 font-bold"></p>
+                </div>
+            </div>
+            <div class="flex border-t border-white/10">
+                <button onclick="salinData()" class="flex-1 p-4 text-blue-400 font-bold border-r border-white/10">Copy</button>
+                <button onclick="tampilLogin()" class="flex-1 p-4 text-white">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCn7NYAVJbt92qaOsMQ5vpHncXmBg2Kq7Q",
+            authDomain: "qrs-auth-key.firebaseapp.com",
+            databaseURL: "https://qrs-auth-key-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "qrs-auth-key",
+            storageBucket: "qrs-auth-key.firebasestorage.app",
+            messagingSenderId: "344177383382",
+            appId: "1:344177383382:web:122fd5814183807d007677"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        let uG = '', pG = '';
+
+        function tampilDaftar() {
+            document.getElementById('login-card').classList.add('hidden');
+            document.getElementById('register-card').classList.remove('hidden');
+        }
+
+        function tampilLogin() {
+            document.getElementById('ios-dialog').classList.add('hidden');
+            document.getElementById('register-card').classList.add('hidden');
+            document.getElementById('login-card').classList.remove('hidden');
+        }
+
+        function prosesDaftar() {
+            const n = document.getElementById('reg-nama').value.trim();
+            const a = document.getElementById('reg-alamat').value.trim();
+            const w = document.getElementById('reg-wa').value.trim();
+            const b = document.getElementById('btn-reg');
+            if (n.length < 3) return alert("Nama terlalu pendek");
+            b.disabled = true;
+            const id = Math.floor(1000 + Math.random() * 9000);
+            uG = `hm-user-${id}`;
+            pG = `pass-${id}`;
+            db.ref('users/' + uG).set({
+                username: uG, nama: n, alamat: a, wa: w, password: pG, saldo: 0
+            }).then(() => {
+                document.getElementById('alert-user').innerText = "ID: " + uG;
+                document.getElementById('alert-pass').innerText = "PW: " + pG;
+                document.getElementById('ios-dialog').classList.remove('hidden');
+                b.disabled = false;
+            });
+        }
+
+        function salinData() {
+            navigator.clipboard.writeText(`User: ${uG}\nPass: ${pG}`);
+            alert("Copied");
+        }
+
+        function prosesLogin() {
+            const identitas = document.getElementById('login-user').value.trim();
+            const p = document.getElementById('login-pass').value.trim();
+            const btn = document.getElementById('btn-login');
+            btn.disabled = true;
+
+            db.ref('users/' + identitas).once('value').then((s) => {
+                if (s.exists() && s.val().password === p) {
+                    lanjutKeHome(s.val());
+                } else {
+                    db.ref('users').orderByChild('nama').equalTo(identitas).once('value').then((snap) => {
+                        btn.disabled = false;
+                        if (snap.exists()) {
+                            const data = Object.values(snap.val())[0];
+                            if (data.password === p) lanjutKeHome(data);
+                            else alert("Password Salah");
+                        } else {
+                            alert("Akun tidak ditemukan");
+                        }
+                    });
+                }
+            });
+        }
+
+        function lanjutKeHome(data) {
+            localStorage.setItem('hmUser', JSON.stringify(data));
+            window.location.href = 'base.html';
+        }
+    </script>
+</body>
+</html>
